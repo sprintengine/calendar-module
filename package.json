@@ -1,0 +1,22 @@
+{
+  "name": "multicode-calendar",
+  "version": "1.0.0",
+  "description": "Calendar workspace module for Multicode — built SDK-only against @multicode/module-sdk (benchmark artifact).",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build:renderer": "esbuild src/renderer.tsx --bundle --format=esm --platform=browser --external:react --external:react-dom --external:react-dom/client --external:react/jsx-runtime --outfile=dist/renderer.mjs",
+    "build:main": "esbuild src/main.ts --bundle --format=cjs --platform=node --external:electron --outfile=dist/main.cjs",
+    "build": "npm run build:renderer && npm run build:main",
+    "check": "npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "@multicode/module-sdk": "file:multicode-module-sdk-0.4.0.tgz",
+    "@types/node": "^26.1.0",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.28.1",
+    "react": "^18.3.1",
+    "typescript": "^6.0.3"
+  }
+}
