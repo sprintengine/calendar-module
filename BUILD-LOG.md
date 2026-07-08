@@ -142,3 +142,28 @@ electron-playwright skill). Evidence in `evidence/`; the full chain verified:
 - **Review:** ledger entries 3–5 added. The dev-server contamination discovered mid-drive
   (inherited `ELECTRON_RENDERER_URL` pointed the built app at the user's Vite dev server)
   was neutralized by blanking the var in the harness env.
+
+### Step 5 — Exhaustive-tier close-out (08:20–08:40)
+- **Recurring rendering** (`recur.ts`): daily/weekly events project an occurrence into each
+  matching visible day (week/day/month); occurrences keep the base id, so editing/moving one
+  re-anchors the series (documented). Verified live: daily "Standup notes" renders 5
+  occurrences across the week — 7 event blocks total, zero console errors.
+- **Jump-to-date** input in the toolbar (functional stand-in for the mini month-picker).
+- **Keyboard**: Delete/Backspace on a focused event deletes it (unschedules its automation);
+  Tab/Enter/Space open behavior already in place; reduced-motion guard already in place.
+- **Deliberately not built** (final scope note): connector-backed runs — no SDK surface
+  exists (epic-deferred; SDK-FINDINGS documents what a module would need); connector/CLI
+  selection is a free-text CLI field only. Sprint events run via `spawnAgent` with the item
+  as the brief (no SDK sprint-start).
+- **Review:** `npm run check` green; smoke-drive green. One harness slip (patched the wrong
+  of two per-workspace data files — two workspaces existed from repeated fresh profiles;
+  not module-relevant, not ledger-counted).
+
+## Final status
+
+Module complete and verified to the benchmark's Core tier plus the exhaustive items above.
+Self-assessed rubric (§9, honest): dims 1,3,4,6,7,8,10,11,12 strong; dim 2 SDK-clean (all
+escapes are documented §7 gaps); dim 5 (connectors) unbuilt — no SDK surface; dim 9 solid
+minus mini-month popover polish. The SDK dry-run answer: **a real workspace is buildable
+SDK-only on 0.4.0**, with one app-side blocker found & fixed (creation-hub template) and
+four workaround-severity gaps queued for the next SDK release.

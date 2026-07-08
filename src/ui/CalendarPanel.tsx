@@ -32,7 +32,8 @@ import {
   type ScheduleRequestDetail,
 } from './bus'
 import { CommandBar, type CommandBarAction } from './CommandBar'
-import { addDays, dayTitle, monthTitle, parseLocalDateTime, startOfWeek, toLocalDateTime, weekTitle } from './dates'
+import { addDays, dayTitle, monthTitle, parseLocalDateTime, startOfMonth, startOfWeek, toDateKey, toLocalDateTime, weekTitle } from './dates'
+import { expandEvents, monthGridDays } from './recur'
 import { EventEditor, type SaveOptions } from './EventEditor'
 import { MonthView } from './MonthView'
 import { PlanningRail } from './PlanningRail'
@@ -472,6 +473,21 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   }, [view, focusDate])
 
+  // Recurring events render an occurrence per matching visible day. The
+  // synthetic copies keep the base id, so opening/moving/resizing an
+  // occurrence edits (re-anchors) the stored series — documented behavior.
+  const gridEvents = useMemo(() => {
+    const visible = (events ?? []).filter((event) => !event.unscheduled)
+    return expandEvents(visible, days).map((display) => ({ ...display.event, start: display.start }))
+  }, [events, days])
+
+  const monthEvents = useMemo(() => {
+    if (view !== 'month') return []
+    const visible = (events ?? []).filter((event) => !event.unscheduled)
+    const cells = monthGridDays(startOfWeek(startOfMonth(focusDate)))
+    return expandEvents(visible, cells).map((display) => ({ ...display.event, start: display.start }))
+  }, [events, view, focusDate])
+
   const title =
     view === 'month' ? monthTitle(focusDate) : view === 'day' ? dayTitle(focusDate) : weekTitle(startOfWeek(focusDate))
 
@@ -508,6 +524,16 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
         <button type="button" className="mccal-btn" onClick={() => navigate(1)} aria-label="Next">
           ›
         </button>
+        <input
+          type="date"
+          className="mccal-btn"
+          style={{ width: 130 }}
+          aria-label="Jump to date"
+          value={toDateKey(focusDate)}
+          onChange={(changeEvent) => {
+            if (changeEvent.target.value) setFocusDate(parseLocalDateTime(`${changeEvent.target.value}T00:00`))
+          }}
+        />
         <span className="mccal-bar-spacer" />
         <div className="mccal-viewgroup" role="radiogroup" aria-label="Calendar view">
           {(['day', 'week', 'month'] as const).map((candidate) => (
@@ -541,7 +567,7 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
         {view === 'month' ? (
           <MonthView
             focusDate={focusDate}
-            events={events ?? []}
+            events={monthEvents}
             now={now}
             onOpenDay={(day) => {
               setFocusDate(day)
@@ -555,7 +581,7 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
         ) : (
           <TimeGrid
             days={days}
-            events={(events ?? []).filter((event) => !event.unscheduled)}
+            events={gridEvents}
             now={now}
             onCreateRange={handleCreateRange}
             onMove={handleMove}
@@ -564,6 +590,7 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
               setEditorError(null)
               setEditor({ draft: event, isNew: false })
             }}
+            onDelete={handleDelete}
             onExternalDrop={handleExternalDrop}
           />
         )}

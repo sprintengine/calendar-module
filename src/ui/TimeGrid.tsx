@@ -33,6 +33,7 @@ type TimeGridProps = {
   onMove(eventId: string, newStart: string): void
   onResize(eventId: string, durationMinutes: number): void
   onOpen(event: CalendarEvent): void
+  onDelete?(event: CalendarEvent): void
   onExternalDrop(dataTransfer: DataTransfer, target: DropTarget): void
 }
 
@@ -71,6 +72,7 @@ export function TimeGrid({
   onMove,
   onResize,
   onOpen,
+  onDelete,
   onExternalDrop,
 }: TimeGridProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -213,6 +215,9 @@ export function TimeGrid({
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       onOpen(calEvent)
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault()
+      onDelete?.(calEvent)
     }
   }
 
