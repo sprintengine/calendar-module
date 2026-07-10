@@ -96,3 +96,9 @@ Severity: `blocker` | `workaround` | `polish`
   `storage` disclosure permission. This module now persists events through it,
   composed with `WorkspaceContextToken` for workspaceId → root; the hand-rolled
   `~/.multicode/calendar-data` files (undisclosed home-dir writes) are gone.
+  Deliberate: no migration of the old home-dir files — this module was never
+  published (the marketplace entry is its first publication), so the only data
+  in the legacy location is this benchmark's own July-8 test files; a migration
+  would require permanently declaring `filesystem:read-home` to serve zero
+  real installs. A transiently unresolvable workspace now fails the load/save
+  with a retry message instead of silently forking into the global store.

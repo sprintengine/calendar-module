@@ -55,7 +55,12 @@ async function eventsScope(
   workspaceId: string
 ): Promise<{ key: string; workspaceRoot?: string }> {
   const view = await host.requireService(WorkspaceContextToken).get(workspaceId)
-  return view?.folderPath ? { key: EVENTS_KEY, workspaceRoot: view.folderPath } : { key: globalEventsKey(workspaceId) }
+  // A null view is transient ("not resolvable yet") — fail the call so the
+  // panel retries, instead of silently reading/writing the global fallback
+  // and forking the store across two scopes. A RESOLVED workspace without a
+  // folder is genuinely folderless and keeps its stable global key.
+  if (!view) throw new Error(`Workspace "${workspaceId}" is not resolvable yet — retry shortly.`)
+  return view.folderPath ? { key: EVENTS_KEY, workspaceRoot: view.folderPath } : { key: globalEventsKey(workspaceId) }
 }
 
 async function loadEvents(host: MainHost, storage: ModuleStorageService, workspaceId: string): Promise<CalendarEvent[]> {
