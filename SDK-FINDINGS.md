@@ -40,6 +40,12 @@ Severity: `blocker` | `workaround` | `polish`
 - Proposed SDK change: `RendererHost.getWorkspace(workspaceId): Promise<{ id, name,
   folderPath }>` (read-only, `ipc:workspace-read` disclosure), or pass `workspaceRoot` in
   `WorkspacePanelProps`.
+- **RESOLVED — SDK Unreleased post-0.4.0 (2026-07-10, MC-1539)**: exactly the proposed
+  shape — renderer `RendererHost.getWorkspace(workspaceId)` and main-side
+  `WorkspaceContextToken` both resolve `ModuleWorkspaceView { id, name, folderPath, mode }`
+  (null for unknown ids, never a throw; `ipc:workspace-read` disclosure). This module now
+  resolves its root through `getWorkspace`; `deriveWorkspaceRoot` and the drop-payload
+  fallback are deleted.
 
 ### No module CSS channel
 - Feature it blocked: styling the entire workspace UI.

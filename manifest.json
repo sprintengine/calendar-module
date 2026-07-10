@@ -24,7 +24,7 @@
   },
   "signature": {
     "algorithm": "ed25519",
-    "publicKey": "MCowBQYDK2VwAyEAl5TufoXWyQIvwYTUJRLeK9BxDNyyqmD6j1/e1HK0ms0=",
-    "signature": "/A3Mo1kcr43GvtSFDJSOrCIDsek5wKugPF56tA/pi2ynU2sUdxZIUjNhvHD0lddRf03CtCtkqUzPxSeXMkC9Dw=="
+    "publicKey": "MCowBQYDK2VwAyEAdyrWFPITEeAGeT02LbK916jLZSnY0Qciw0Oqqzl2pwI=",
+    "signature": "+/dPjeWTwYz/hJCgOm3USV6BMFAY/C7oeQJbzeG36kZ7MkvP3TqeMs4nwKZ7Td/mBMsD4t9yE7z7eMz7a2NmBQ=="
   }
 }

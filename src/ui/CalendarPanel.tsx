@@ -57,13 +57,6 @@ function deriveDisplayId(item: BacklogItemView, key: string): string | undefined
   return match ? `${key}-${match[1]}` : undefined
 }
 
-function deriveWorkspaceRoot(items: BacklogItemView[]): string | null {
-  const item = items[0]
-  if (!item) return null
-  const suffix = `/${item.relativePath}`
-  return item.path.endsWith(suffix) ? item.path.slice(0, -suffix.length) : null
-}
-
 export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelProps) {
   const [view, setView] = useState<CalendarView>(initialView)
   const [focusDate, setFocusDate] = useState(() => new Date())
@@ -116,6 +109,21 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     [host, workspaceId]
   )
 
+  // ── Workspace context ──────────────────────────────────────────────────────
+  // The supported id → root resolution (SDK getWorkspace) — replaces the old
+  // opportunistic derivation from backlog item paths / drop payloads. A
+  // folderless workspace resolves folderPath null and scheduling stays off.
+  useEffect(() => {
+    let disposed = false
+    setWorkspaceRoot(null)
+    void host.getWorkspace(workspaceId).then((view) => {
+      if (!disposed) setWorkspaceRoot(view?.folderPath ?? null)
+    })
+    return () => {
+      disposed = true
+    }
+  }, [host, workspaceId])
+
   // ── Backlog rail (live) ────────────────────────────────────────────────────
   useEffect(() => {
     let disposed = false
@@ -126,7 +134,6 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
       off = host.watchBacklogItems(workspaceId, (items) => {
         if (disposed) return
         setBacklogItems(items)
-        setWorkspaceRoot((current) => current ?? deriveWorkspaceRoot(items))
       })
     } catch {
       setBacklogUnavailable(true)
@@ -347,7 +354,6 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     const offSchedule = onBusEvent<ScheduleRequestDetail>(SCHEDULE_REQUEST_EVENT, (detail) => {
       if (detail.workspaceId !== workspaceId) return
       detail.claim()
-      setWorkspaceRoot((current) => current ?? detail.workspaceRoot)
       const nextHour = new Date()
       nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0)
       openNewEditor({
