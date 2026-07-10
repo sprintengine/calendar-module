@@ -2,16 +2,18 @@
 // automation creation (the scheduling engine), and the action provider that
 // actually runs scheduled events through the shared session runtime.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import {
   getAutomationsService,
+  getModuleStorage,
   registerAutomationAction,
+  WorkspaceContextToken,
   type ActionContext,
   type AutomationActionProvider,
   type MainHost,
+  type ModuleStorageService,
   type RegisterMain,
   type ScheduleTriggerConfig,
 } from '@multicode/module-sdk'
@@ -33,33 +35,48 @@ import {
 } from './types'
 
 // ── Event persistence ────────────────────────────────────────────────────────
-// Events are stored per-workspace under the user's home dir, keyed by
-// workspaceId. SDK-FINDINGS: there is no module storage API and no way to
-// resolve workspaceId → workspace folder from entry.main, so per-workspace
-// data cannot live in the workspace folder unless the renderer happens to
-// know the root (it only reliably does via backlog items or drop payloads).
+// Events persist through the SDK's module storage (host-placed): per-workspace
+// data lives inside the workspace folder (`.multi-code/modules/calendar/`),
+// resolved from workspaceId via the workspace context. A folderless (or
+// not-yet-resolvable) workspace falls back to the module's global per-user
+// store under a workspace-derived key, so the calendar still works there.
+// (Formerly hand-rolled JSON under ~/.multicode/calendar-data — undisclosed
+// home-dir writes; resolved by SDK storage + workspace context.)
 
-function eventsPath(workspaceId: string): string {
-  const safe = workspaceId.replace(/[^A-Za-z0-9_-]/g, '_')
-  return join(homedir(), '.multicode', 'calendar-data', `${safe}.json`)
+const EVENTS_KEY = 'events'
+
+function globalEventsKey(workspaceId: string): string {
+  const safe = workspaceId.toLowerCase().replace(/[^a-z0-9._-]/g, '-').replace(/^[^a-z0-9]+/, '')
+  return `events-${safe || 'workspace'}`.slice(0, 64)
 }
 
-function loadEvents(workspaceId: string): CalendarEvent[] {
-  try {
-    const raw = readFileSync(eventsPath(workspaceId), 'utf8')
-    const parsed = JSON.parse(raw) as Partial<EventsFile>
-    if (parsed.version !== 1 || !Array.isArray(parsed.events)) return []
-    return parsed.events
-  } catch {
-    return []
-  }
+async function eventsScope(
+  host: MainHost,
+  workspaceId: string
+): Promise<{ key: string; workspaceRoot?: string }> {
+  const view = await host.requireService(WorkspaceContextToken).get(workspaceId)
+  return view?.folderPath ? { key: EVENTS_KEY, workspaceRoot: view.folderPath } : { key: globalEventsKey(workspaceId) }
 }
 
-function saveEvents(workspaceId: string, events: CalendarEvent[]): void {
+async function loadEvents(host: MainHost, storage: ModuleStorageService, workspaceId: string): Promise<CalendarEvent[]> {
+  const scope = await eventsScope(host, workspaceId)
+  const record = await storage.get(scope)
+  if (!record.ok || !record.found) return []
+  const parsed = record.value as Partial<EventsFile>
+  if (parsed.version !== 1 || !Array.isArray(parsed.events)) return []
+  return parsed.events
+}
+
+async function saveEvents(
+  host: MainHost,
+  storage: ModuleStorageService,
+  workspaceId: string,
+  events: CalendarEvent[]
+): Promise<void> {
   const file: EventsFile = { version: 1, events }
-  const path = eventsPath(workspaceId)
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, JSON.stringify(file, null, 2), 'utf8')
+  const scope = await eventsScope(host, workspaceId)
+  const saved = await storage.set({ ...scope, value: file })
+  if (!saved.ok) throw new Error(`Saving calendar events failed (${saved.code}): ${saved.message}`)
 }
 
 // ── Scheduling: calendar event → real Automation ────────────────────────────
@@ -176,6 +193,7 @@ async function scheduleEvent(host: MainHost, request: ScheduleRequest): Promise<
 
 export const registerMain: RegisterMain = (host) => {
   registerAutomationAction(host, runScheduledAction)
+  const storage = getModuleStorage(host)
 
   host.registerIpc(CH_PING, async () => ({ ok: true, module: 'calendar' }))
 
@@ -184,7 +202,7 @@ export const registerMain: RegisterMain = (host) => {
     if (typeof workspaceId !== 'string' || workspaceId.length === 0) {
       throw new Error('calendar:events-load requires a workspaceId.')
     }
-    return { events: loadEvents(workspaceId) }
+    return { events: await loadEvents(host, storage, workspaceId) }
   })
 
   host.registerIpc(CH_EVENTS_SAVE, async (_event, payload: unknown) => {
@@ -192,7 +210,7 @@ export const registerMain: RegisterMain = (host) => {
     if (typeof workspaceId !== 'string' || workspaceId.length === 0 || !Array.isArray(events)) {
       throw new Error('calendar:events-save requires workspaceId and an events array.')
     }
-    saveEvents(workspaceId, events)
+    await saveEvents(host, storage, workspaceId, events)
     return { saved: true }
   })
 

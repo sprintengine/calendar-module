@@ -90,3 +90,9 @@ Severity: `blocker` | `workaround` | `polish`
 - Severity: workaround
 - Proposed SDK change: as the epic deferred it — module KV keyed (moduleId, workspaceId),
   informed by exactly this pattern.
+- **RESOLVED — SDK Unreleased post-0.4.0 (2026-07-10, MC-1536)**:
+  `getModuleStorage(host)` → scoped `get`/`set`/`delete`/`list`, host-placed
+  (workspace `.multi-code/modules/calendar/`, or the per-user global store),
+  `storage` disclosure permission. This module now persists events through it,
+  composed with `WorkspaceContextToken` for workspaceId → root; the hand-rolled
+  `~/.multicode/calendar-data` files (undisclosed home-dir writes) are gone.

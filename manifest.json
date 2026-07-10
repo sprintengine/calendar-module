@@ -10,7 +10,8 @@
     "ipc:invoke",
     "automations.manage",
     "backlog.read",
-    "backlog.write"
+    "backlog.write",
+    "storage"
   ],
   "publisher": "conal",
   "category": "orchestration",
@@ -25,6 +26,6 @@
   "signature": {
     "algorithm": "ed25519",
     "publicKey": "MCowBQYDK2VwAyEAdyrWFPITEeAGeT02LbK916jLZSnY0Qciw0Oqqzl2pwI=",
-    "signature": "+/dPjeWTwYz/hJCgOm3USV6BMFAY/C7oeQJbzeG36kZ7MkvP3TqeMs4nwKZ7Td/mBMsD4t9yE7z7eMz7a2NmBQ=="
+    "signature": "5SAGOm9VO2YzIep1HWLt8erjmiTBb5cYHFNyoJPbrFjM/N6nK4yqKELS4pemNmo5oAm7aK6HqldAt1OFWJn+AA=="
   }
 }
