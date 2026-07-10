@@ -38,6 +38,16 @@ const STYLES = /* css */ `
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.mccal-live {
+  font-size: 11px;
+  line-height: 16px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--tone-ok, var(--text-muted));
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
 .mccal-bar {
   display: flex;
   align-items: center;

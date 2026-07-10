@@ -65,6 +65,10 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
   const [backlogItems, setBacklogItems] = useState<BacklogItemView[] | null>(null)
   const [backlogUnavailable, setBacklogUnavailable] = useState(false)
   const [workspaceRoot, setWorkspaceRoot] = useState<string | null>(null)
+  // Live agent sessions in this workspace (SDK watchAgentSessions): drives the
+  // "N agents running" readout so fired scheduled runs are visible from the
+  // calendar itself.
+  const [liveAgentCount, setLiveAgentCount] = useState(0)
   const [editor, setEditor] = useState<{ draft: CalendarEvent; isNew: boolean } | null>(null)
   const [editorError, setEditorError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -108,6 +112,19 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     },
     [host, workspaceId]
   )
+
+  // ── Live sessions (SDK watchAgentSessions) ─────────────────────────────────
+  useEffect(() => {
+    let off: (() => void) | undefined
+    try {
+      off = host.watchAgentSessions(workspaceId, (sessions) => {
+        setLiveAgentCount(sessions.filter((session) => session.isLive && session.kind === 'agent').length)
+      })
+    } catch {
+      // Session source unavailable — the readout stays at 0.
+    }
+    return () => off?.()
+  }, [host, workspaceId])
 
   // ── Workspace context ──────────────────────────────────────────────────────
   // The supported id → root resolution (SDK getWorkspace) — replaces the old
@@ -450,6 +467,25 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     { id: 'week', label: 'Week view', run: () => setView('week') },
     { id: 'month', label: 'Month view', run: () => setView('month') },
     { id: 'plan', label: 'Plan my day (auto-schedule)', hint: 'Time-block unscheduled work into free slots today', run: () => planMyDay() },
+    {
+      id: 'run-day-plan',
+      label: 'Run day plan in an agent',
+      hint: 'Spawns an agent (shared session runtime) to work today\'s scheduled events',
+      run: () => {
+        const today = toDateKey(new Date())
+        const todaysEvents = (events ?? []).filter((event) => event.start.startsWith(today))
+        const lines = todaysEvents.length > 0
+          ? todaysEvents.map((event) => `- ${event.start.slice(11, 16)} ${event.title}`).join('\n')
+          : '- (no events scheduled today)'
+        void host.spawnAgent({
+          workspaceId,
+          name: 'Day Planner',
+          prompt: `You are working from this workspace's calendar. Today's schedule:\n${lines}\n\nReview the schedule and start on the first actionable item.`,
+        }).then((result) => {
+          if (!result.ok) setLoadError(`Could not start the day-plan agent (${result.code}): ${result.message}`)
+        })
+      },
+    },
     ...(backlogItems ?? [])
       .filter((item) => item.status !== 'completed' && item.status !== 'archived' && item.type !== 'epic' && !scheduledPaths.has(item.path))
       .slice(0, 8)
@@ -521,6 +557,11 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     >
       <div className="mccal-bar">
         <span className="mccal-title">{title}</span>
+        {liveAgentCount > 0 ? (
+          <span className="mccal-live" title="Agents running in this workspace">
+            {liveAgentCount} agent{liveAgentCount === 1 ? '' : 's'} running
+          </span>
+        ) : null}
         <button type="button" className="mccal-btn" onClick={() => navigate(-1)} aria-label="Previous">
           ‹
         </button>

@@ -102,3 +102,12 @@ Severity: `blocker` | `workaround` | `polish`
   would require permanently declaring `filesystem:read-home` to serve zero
   real installs. A transiently unresolvable workspace now fails the load/save
   with a retry message instead of silently forking into the global store.
+
+### No live session state for panels (epic-level gap; adopted on resolution)
+- Feature it blocked: showing whether scheduled runs' agents are actually
+  running from inside the calendar (fire-and-forget was the only option).
+- **RESOLVED — SDK Unreleased post-0.4.0 (2026-07-11, MC-1535)**: this module
+  now adopts `host.watchAgentSessions(workspaceId, cb)` for the "N agents
+  running" readout in the calendar bar, and `host.spawnAgent(...)` for the
+  "Run day plan in an agent" command-bar action (spawns through the app's
+  shared session runtime with a structured result).
