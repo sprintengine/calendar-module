@@ -3,3 +3,4 @@ dist/
 packed/
 *.key
 *.pem
+.DS_Store
