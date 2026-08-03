@@ -1,4 +1,4 @@
-# Multicode Calendar — third-party capability module (SDK benchmark artifact)
+# Sprint Engine Calendar — capability module for Sprint Engine Studio
 
 An Outlook-style calendar **workspace type** for Multicode, built entirely outside the
 Multicode repo against the packed `@multicode/module-sdk` **0.4.0** tarball, per

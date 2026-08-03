@@ -1,7 +1,7 @@
 {
-  "name": "multicode-calendar",
+  "name": "sprintengine-calendar",
   "version": "1.0.0",
-  "description": "Calendar workspace module for Multicode — built SDK-only against @multicode/module-sdk (benchmark artifact).",
+  "description": "Calendar workspace module for Multicode \u2014 built SDK-only against @multicode/module-sdk (benchmark artifact).",
   "private": true,
   "type": "commonjs",
   "scripts": {
