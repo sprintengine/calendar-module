@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, DragEvent as ReactDragEvent, KeyboardEvent } from 'react'
 
-import { hasFileDropData } from '@multicode/module-sdk'
+import { hasFileDropData } from '@sprintengine/module-sdk'
 
 import type { CalendarEvent } from '../types'
 import { minutesOfDay, pad2, parseLocalDateTime, sameDay, toDateKey, toLocalDateTime } from './dates'
@@ -17,7 +17,7 @@ export const HOUR_HEIGHT = 48
 const SNAP_MINUTES = 15
 const DEFAULT_SCROLL_HOUR = 7
 
-export const CALENDAR_DROP_MIME = 'application/x-multicode-calendar-drop'
+export const CALENDAR_DROP_MIME = 'application/x-sprintengine-calendar-drop'
 
 export type CalendarDropPayload =
   | { kind: 'rail-backlog'; path: string; title: string; displayId?: string }

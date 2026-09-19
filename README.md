@@ -1,7 +1,7 @@
 # Sprint Engine Calendar — capability module for Sprint Engine Studio
 
-An Outlook-style calendar **workspace type** for Multicode, built entirely outside the
-Multicode repo against the packed `@multicode/module-sdk` **0.4.0** tarball, per
+An Outlook-style calendar **workspace type** for SprintEngine, built entirely outside the
+SprintEngine repo against the packed `@sprintengine/module-sdk` **0.6.0** tarball, per
 `benchmarks/2026-07-05-sdk-calendar-workspace.md`. It is both a real scheduling surface and
 the benchmark's SDK-ergonomics probe — see `SDK-FINDINGS.md` (gap report) and
 `BUILD-LOG.md` (step log + honest mistake ledger).
@@ -36,9 +36,9 @@ the benchmark's SDK-ergonomics probe — see `SDK-FINDINGS.md` (gap report) and
 ```sh
 npm install                 # deps incl. the local SDK tarball (SDK is not on npm)
 npm run check               # typecheck + bundle to dist/
-npx multicode-module sign . --key <your-key.pem>
-npx multicode-module verify .
-npx multicode-module pack . --out ~/.multicode/modules/calendar
+npx sprintengine-module sign . --key <your-key.pem>
+npx sprintengine-module verify .
+npx sprintengine-module pack . --out ~/.sprintengine/modules/calendar
 ```
 
 Then trust the module in **Settings → Modules** and relaunch the app.

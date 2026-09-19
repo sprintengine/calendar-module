@@ -8,7 +8,7 @@ import type {
   RendererHost,
   WorkspaceLayoutTemplate,
   WorkspacePanelProps,
-} from '@multicode/module-sdk'
+} from '@sprintengine/module-sdk'
 
 import {
   CH_EVENTS_LOAD,

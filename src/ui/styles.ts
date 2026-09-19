@@ -6,7 +6,7 @@
 // UI re-skins with the active theme with no JS theme observation and no
 // literal colors.
 
-const STYLE_ELEMENT_ID = 'multicode-calendar-module-styles'
+const STYLE_ELEMENT_ID = 'sprintengine-calendar-module-styles'
 
 export function injectStylesOnce(): void {
   if (document.getElementById(STYLE_ELEMENT_ID)) return

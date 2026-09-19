@@ -9,7 +9,7 @@ import {
   type BacklogItemView,
   type RendererHost,
   type WorkspacePanelProps,
-} from '@multicode/module-sdk'
+} from '@sprintengine/module-sdk'
 
 import {
   CH_CREATE_BACKLOG_ITEM,

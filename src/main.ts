@@ -16,7 +16,7 @@ import {
   type ModuleStorageService,
   type RegisterMain,
   type ScheduleTriggerConfig,
-} from '@multicode/module-sdk'
+} from '@sprintengine/module-sdk'
 
 import {
   CH_CREATE_BACKLOG_ITEM,
@@ -36,11 +36,11 @@ import {
 
 // ── Event persistence ────────────────────────────────────────────────────────
 // Events persist through the SDK's module storage (host-placed): per-workspace
-// data lives inside the workspace folder (`.multi-code/modules/calendar/`),
+// data lives inside the workspace folder (`.sprintengine/modules/calendar/`),
 // resolved from workspaceId via the workspace context. A folderless (or
 // not-yet-resolvable) workspace falls back to the module's global per-user
 // store under a workspace-derived key, so the calendar still works there.
-// (Formerly hand-rolled JSON under ~/.multicode/calendar-data — undisclosed
+// (Formerly hand-rolled JSON under ~/.sprintengine/calendar-data — undisclosed
 // home-dir writes; resolved by SDK storage + workspace context.)
 
 const EVENTS_KEY = 'events'
@@ -104,10 +104,10 @@ function runPrompt(event: CalendarEvent): string {
     // Sanctioned fallback: spawn an agent through the shared runtime and hand it
     // the source item as its brief.
     lines.push(
-      'You are running a scheduled sprint-style work session created from a Multicode Calendar event.'
+      'You are running a scheduled sprint-style work session created from a SprintEngine Calendar event.'
     )
   } else {
-    lines.push('You are running a scheduled task created from a Multicode Calendar event.')
+    lines.push('You are running a scheduled task created from a SprintEngine Calendar event.')
   }
   lines.push(`Event: ${event.title}`)
   if (event.description) lines.push(`Details: ${event.description}`)
@@ -187,7 +187,6 @@ async function scheduleEvent(host: MainHost, request: ScheduleRequest): Promise<
           ...(event.cliModel ? { cliModel: event.cliModel } : {}),
         },
       },
-      autonomyDefault: 'review_only',
     },
   })
   if (!created.ok) return { ok: false, code: created.code, message: created.message }
@@ -265,7 +264,7 @@ export const registerMain: RegisterMain = (host) => {
       `# ${title}`,
       '',
       description?.trim() ? `${description.trim()}\n` : '',
-      '_Created from a Multicode Calendar task._',
+      '_Created from a SprintEngine Calendar task._',
       '',
     ].join('\n')
     writeFileSync(absolute, body, 'utf8')

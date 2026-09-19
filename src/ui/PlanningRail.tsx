@@ -5,7 +5,7 @@
 
 import type { DragEvent as ReactDragEvent } from 'react'
 
-import { setFileDropData, type BacklogItemView } from '@multicode/module-sdk'
+import { setFileDropData, type BacklogItemView } from '@sprintengine/module-sdk'
 
 import type { CalendarEvent } from '../types'
 import { CALENDAR_DROP_MIME } from './TimeGrid'

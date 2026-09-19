@@ -4,10 +4,10 @@
 // contract. A dispatch is "claimed" when a mounted panel handled it, so
 // callers can fall back to headless behavior when no calendar is open.
 
-export const SCHEDULE_REQUEST_EVENT = 'multicode-calendar:schedule-request'
-export const REVEAL_EVENT = 'multicode-calendar:reveal-event'
-export const NEW_EVENT_REQUEST = 'multicode-calendar:new-event'
-export const PLAN_DAY_REQUEST = 'multicode-calendar:plan-day'
+export const SCHEDULE_REQUEST_EVENT = 'sprintengine-calendar:schedule-request'
+export const REVEAL_EVENT = 'sprintengine-calendar:reveal-event'
+export const NEW_EVENT_REQUEST = 'sprintengine-calendar:new-event'
+export const PLAN_DAY_REQUEST = 'sprintengine-calendar:plan-day'
 
 export type ScheduleRequestDetail = {
   workspaceId: string
