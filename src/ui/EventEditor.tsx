@@ -4,21 +4,21 @@
 
 import { useEffect, useState } from 'react'
 
-import type { CalendarEvent, EventKind, EventRepeat } from '../types'
+import type { ModuleChatRuntimeOption } from '@sprintengine/module-sdk'
+
+import type { CalendarEvent, EventKind, EventRepeat, RunPermissionPreset } from '../types'
 import { addMinutes } from './dates'
 
 const KINDS: Array<{ kind: EventKind; label: string }> = [
   { kind: 'note', label: 'Note' },
   { kind: 'task', label: 'Task' },
   { kind: 'automation', label: 'Automation' },
-  { kind: 'sprint', label: 'Sprint' },
 ]
 
 const KIND_BAR: Record<EventKind, string> = {
   note: 'var(--mccal-note)',
   task: 'var(--mccal-task)',
   automation: 'var(--mccal-automation)',
-  sprint: 'var(--mccal-sprint)',
 }
 
 export type SaveOptions = {
@@ -29,8 +29,10 @@ export type SaveOptions = {
 export type EventEditorProps = {
   draft: CalendarEvent
   isNew: boolean
-  /** Scheduling (automation/sprint kinds) needs the workspace root; null = unknown. */
+  /** Scheduling (automation kind) needs a workspace with a folder. */
   canSchedule: boolean
+  /** Agent runtimes a scheduled run's chat can use (`RendererHost.listChatRuntimes`). */
+  runtimes: ModuleChatRuntimeOption[]
   error: string | null
   onSave(event: CalendarEvent, options?: SaveOptions): void
   onDelete(event: CalendarEvent): void
@@ -42,6 +44,7 @@ export function EventEditor({
   draft,
   isNew,
   canSchedule,
+  runtimes,
   error,
   onSave,
   onDelete,
@@ -61,7 +64,8 @@ export function EventEditor({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const runsAtStart = event.kind === 'automation' || event.kind === 'sprint'
+  const runsAtStart = event.kind === 'automation'
+  const runtime = runtimes.find((option) => option.id === event.cli)
   const startDate = event.start.slice(0, 10)
   const startTime = event.start.slice(11, 16)
   const end = addMinutes(event.start, event.durationMinutes)
@@ -200,16 +204,68 @@ export function EventEditor({
             </div>
             {runsAtStart ? (
               <div className="mccal-field">
-                <label htmlFor="mccal-cli">Agent CLI (optional)</label>
-                <input
+                <label htmlFor="mccal-cli">Agent</label>
+                <select
                   id="mccal-cli"
-                  placeholder="default"
                   value={event.cli ?? ''}
-                  onChange={(changeEvent) => patch({ cli: changeEvent.target.value || undefined })}
-                />
+                  onChange={(changeEvent) =>
+                    patch({ cli: changeEvent.target.value || undefined, cliModel: undefined })
+                  }
+                >
+                  <option value="">Your last-used agent</option>
+                  {event.cli && !runtime ? <option value={event.cli}>{event.cli}</option> : null}
+                  {runtimes.map((option) => (
+                    <option key={option.id} value={option.id} disabled={!option.available}>
+                      {option.label}
+                      {option.available ? '' : ' (not installed)'}
+                    </option>
+                  ))}
+                </select>
               </div>
             ) : null}
           </div>
+
+          {runsAtStart ? (
+            <div className="mccal-row2">
+              {runtime && runtime.models.length > 0 ? (
+                <div className="mccal-field">
+                  <label htmlFor="mccal-model">Model</label>
+                  <select
+                    id="mccal-model"
+                    value={event.cliModel ?? ''}
+                    onChange={(changeEvent) => patch({ cliModel: changeEvent.target.value || undefined })}
+                  >
+                    <option value="">Default</option>
+                    {runtime.models.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <div className="mccal-field">
+                <label htmlFor="mccal-permissions">Permissions</label>
+                <select
+                  id="mccal-permissions"
+                  value={event.permissionPreset ?? 'none'}
+                  onChange={(changeEvent) =>
+                    patch({ permissionPreset: changeEvent.target.value as RunPermissionPreset })
+                  }
+                >
+                  <option value="none">Agent's own settings</option>
+                  <option value="bypass">Skip every permission prompt</option>
+                </select>
+              </div>
+            </div>
+          ) : null}
+          {runsAtStart ? (
+            <div className="mccal-hint">
+              {(event.permissionPreset ?? 'none') === 'bypass'
+                ? 'The run\'s chat skips every permission prompt: it acts unattended without asking.'
+                : 'The run\'s chat follows the agent CLI\'s own permission settings.'}
+            </div>
+          ) : null}
 
           {event.kind === 'task' && isNew && !event.source ? (
             <div className="mccal-field">
@@ -238,9 +294,8 @@ export function EventEditor({
 
           {scheduleBlocked ? (
             <div className="mccal-error">
-              Can't schedule a run yet: the workspace folder isn't known. Drag a Backlog item
-              onto the calendar once (or open a workspace with a Backlog) so the module can
-              learn the workspace root.
+              Can't schedule a run here: this workspace has no folder for the run's agent to
+              work in.
             </div>
           ) : null}
           {error ? <div className="mccal-error">{error}</div> : null}

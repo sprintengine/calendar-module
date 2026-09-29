@@ -11,7 +11,6 @@ export const PLAN_DAY_REQUEST = 'sprintengine-calendar:plan-day'
 
 export type ScheduleRequestDetail = {
   workspaceId: string
-  workspaceRoot: string
   path: string
   title: string
   displayId?: string
