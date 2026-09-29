@@ -1,0 +1,49 @@
+{
+  "id": "calendar",
+  "displayName": "Calendar",
+  "version": 3,
+  "defaultEnabled": true,
+  "source": "third-party",
+  "permissions": [
+    "filesystem:read-workspace",
+    "filesystem:write-workspace",
+    "ipc:invoke",
+    "ipc:workspace-read",
+    "automations.manage",
+    "backlog.read",
+    "backlog.write",
+    "storage",
+    "conversation:read",
+    "conversation:operate"
+  ],
+  "publisher": "conal",
+  "category": "orchestration",
+  "summary": "Outlook-style calendar workspace: time-block notes and tasks, and schedule Backlog items and automations to run as chats at a time.",
+  "dependsOn": [
+    "automations"
+  ],
+  "components": {
+    "module": {
+      "path": "module",
+      "files": [
+        {
+          "path": "module/dist/main.cjs",
+          "sha256": "bb79a4b276cda781d3683eb3885a25250807bf657a99e2b9e9c4f274262720f6"
+        },
+        {
+          "path": "module/dist/renderer.mjs",
+          "sha256": "eeb39a281939af17cb49175e3cd4bfdd5aa2966de760aac1dbe62add0fdb75aa"
+        },
+        {
+          "path": "module/manifest.json",
+          "sha256": "77185d0f9c1e706f8aaf94dceb8368f40dc6e03d14feec3d45699b52ce8b7ac1"
+        }
+      ]
+    }
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "publicKey": "MCowBQYDK2VwAyEAdyrWFPITEeAGeT02LbK916jLZSnY0Qciw0Oqqzl2pwI=",
+    "signature": "7v1qhC0sVQ3LkhhmbFXTroGUv7NQGUcRALng2NrhG/KEH1K+8AIxaZHwwS64q3SwNNVjdZqTwYBn1IXuUgf3AQ=="
+  }
+}
