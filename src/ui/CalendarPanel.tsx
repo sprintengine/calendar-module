@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   readFileDropPayload,
   type BacklogItemView,
+  type ModuleChatRuntimeOption,
   type RendererHost,
   type WorkspacePanelProps,
 } from '@sprintengine/module-sdk'
@@ -15,10 +16,15 @@ import {
   CH_CREATE_BACKLOG_ITEM,
   CH_EVENTS_LOAD,
   CH_EVENTS_SAVE,
+  CH_RUNS,
   CH_SCHEDULE,
   CH_UNSCHEDULE,
+  TOPIC_RUNS_CHANGED,
   type CalendarEvent,
+  type CalendarRun,
+  type CreateBacklogItemResponse,
   type EventsLoadResponse,
+  type RunsResponse,
   type ScheduleResponse,
 } from '../types'
 import { planDay } from './autoSchedule'
@@ -64,11 +70,13 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
   const [events, setEvents] = useState<CalendarEvent[] | null>(null)
   const [backlogItems, setBacklogItems] = useState<BacklogItemView[] | null>(null)
   const [backlogUnavailable, setBacklogUnavailable] = useState(false)
+  // The workspace folder, for display and to know whether runs can be
+  // scheduled. entry.main resolves it again itself; it is never sent there.
   const [workspaceRoot, setWorkspaceRoot] = useState<string | null>(null)
-  // Live agent sessions in this workspace (SDK watchAgentSessions): drives the
-  // "N agents running" readout so fired scheduled runs are visible from the
-  // calendar itself.
-  const [liveAgentCount, setLiveAgentCount] = useState(0)
+  // The chats this calendar's scheduled runs have running (the module's own
+  // conversations, read in entry.main): the "N runs working" readout.
+  const [liveRuns, setLiveRuns] = useState<CalendarRun[]>([])
+  const [runtimes, setRuntimes] = useState<ModuleChatRuntimeOption[]>([])
   const [editor, setEditor] = useState<{ draft: CalendarEvent; isNew: boolean } | null>(null)
   const [editorError, setEditorError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -113,18 +121,31 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     [host, workspaceId]
   )
 
-  // ── Live sessions (SDK watchAgentSessions) ─────────────────────────────────
+  // ── Live runs (the module's own chats, over its bridge) ────────────────────
   useEffect(() => {
-    let off: (() => void) | undefined
-    try {
-      off = host.watchAgentSessions(workspaceId, (sessions) => {
-        setLiveAgentCount(sessions.filter((session) => session.isLive && session.kind === 'agent').length)
-      })
-    } catch {
-      // Session source unavailable — the readout stays at 0.
+    let disposed = false
+    const read = () => {
+      host
+        .invoke(CH_RUNS)
+        .then((response) => {
+          if (!disposed) setLiveRuns((response as RunsResponse).runs)
+        })
+        .catch(() => {
+          // Conversations unavailable — the readout stays empty.
+        })
     }
-    return () => off?.()
-  }, [host, workspaceId])
+    read()
+    const off = host.subscribe(TOPIC_RUNS_CHANGED, read)
+    return () => {
+      disposed = true
+      off()
+    }
+  }, [host])
+
+  // ── Agent runtimes for the editor's picker ─────────────────────────────────
+  useEffect(() => {
+    if (host.supports('chat.open')) setRuntimes(host.listChatRuntimes())
+  }, [host])
 
   // ── Workspace context ──────────────────────────────────────────────────────
   // The supported id → root resolution (SDK getWorkspace) — replaces the old
@@ -187,26 +208,23 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
 
   const scheduleIfNeeded = useCallback(
     async (event: CalendarEvent, previous?: CalendarEvent): Promise<CalendarEvent> => {
-      const runsAtStart = (event.kind === 'automation' || event.kind === 'sprint') && !event.unscheduled
+      const runsAtStart = event.kind === 'automation' && !event.unscheduled
       // Any change to a scheduled run re-issues the automation record: simplest
       // correct reconciliation, and delete/create are both idempotent enough.
-      if (previous?.automationId && workspaceRoot) {
+      if (previous?.automationId) {
         await host
-          .invoke(CH_UNSCHEDULE, { workspaceRoot, automationId: previous.automationId })
+          .invoke(CH_UNSCHEDULE, { workspaceId, automationId: previous.automationId })
           .catch(() => undefined)
       }
       if (!runsAtStart) return { ...event, automationId: undefined }
-      if (!workspaceRoot) {
-        throw new Error('Workspace folder unknown — cannot create the scheduled automation.')
-      }
       const response = (await host.invoke(CH_SCHEDULE, {
-        workspaceRoot,
+        workspaceId,
         event,
       })) as ScheduleResponse
       if (!response.ok) throw new Error(`${response.code}: ${response.message}`)
       return { ...event, automationId: response.automationId }
     },
-    [host, workspaceRoot]
+    [host, workspaceId]
   )
 
   // ── Event mutations ────────────────────────────────────────────────────────
@@ -228,15 +246,15 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     (event: CalendarEvent, options?: SaveOptions) => {
       setEditorError(null)
       const prepare: Promise<CalendarEvent> =
-        options?.addToBacklog && workspaceRoot
+        options?.addToBacklog
           ? host
               .invoke(CH_CREATE_BACKLOG_ITEM, {
-                workspaceRoot,
+                workspaceId,
                 title: event.title,
                 description: event.description,
               })
               .then((response) => {
-                const { path } = response as { path: string }
+                const { path } = response as CreateBacklogItemResponse
                 return { ...event, source: { path, title: event.title } }
               })
           : Promise.resolve(event)
@@ -247,20 +265,20 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
           setEditorError(error instanceof Error ? error.message : String(error))
         )
     },
-    [host, upsert, workspaceRoot]
+    [host, upsert, workspaceId]
   )
 
   const handleDelete = useCallback(
     (event: CalendarEvent) => {
-      if (event.automationId && workspaceRoot) {
+      if (event.automationId) {
         void host
-          .invoke(CH_UNSCHEDULE, { workspaceRoot, automationId: event.automationId })
+          .invoke(CH_UNSCHEDULE, { workspaceId, automationId: event.automationId })
           .catch(() => undefined)
       }
       persist(eventsRef.current.filter((candidate) => candidate.id !== event.id))
       setEditor(null)
     },
-    [host, persist, workspaceRoot]
+    [host, persist, workspaceId]
   )
 
   const handleMove = useCallback(
@@ -317,7 +335,6 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
       // Published contract first: drags from the app's Backlog panel/Files tree.
       const filePayload = readFileDropPayload(dataTransfer)
       if (filePayload) {
-        if (filePayload.rootPath) setWorkspaceRoot((current) => current ?? filePayload.rootPath)
         const file = filePayload.files[0]
         const matching = (backlogItems ?? []).find((item) => item.path === file.path)
         openNewEditor({
@@ -467,25 +484,31 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     { id: 'week', label: 'Week view', run: () => setView('week') },
     { id: 'month', label: 'Month view', run: () => setView('month') },
     { id: 'plan', label: 'Plan my day (auto-schedule)', hint: 'Time-block unscheduled work into free slots today', run: () => planMyDay() },
-    {
-      id: 'run-day-plan',
-      label: 'Run day plan in an agent',
-      hint: 'Spawns an agent (shared session runtime) to work today\'s scheduled events',
-      run: () => {
-        const today = toDateKey(new Date())
-        const todaysEvents = (events ?? []).filter((event) => event.start.startsWith(today))
-        const lines = todaysEvents.length > 0
-          ? todaysEvents.map((event) => `- ${event.start.slice(11, 16)} ${event.title}`).join('\n')
-          : '- (no events scheduled today)'
-        void host.spawnAgent({
-          workspaceId,
-          name: 'Day Planner',
-          prompt: `You are working from this workspace's calendar. Today's schedule:\n${lines}\n\nReview the schedule and start on the first actionable item.`,
-        }).then((result) => {
-          if (!result.ok) setLoadError(`Could not start the day-plan agent (${result.code}): ${result.message}`)
-        })
-      },
-    },
+    ...(host.supports('chat.open')
+      ? [
+          {
+            id: 'run-day-plan',
+            label: 'Run day plan in a chat',
+            hint: 'Opens a chat that works today\'s scheduled events',
+            run: () => {
+              const today = toDateKey(new Date())
+              const todaysEvents = (events ?? []).filter((event) => event.start.startsWith(today))
+              const lines = todaysEvents.length > 0
+                ? todaysEvents.map((event) => `- ${event.start.slice(11, 16)} ${event.title}`).join('\n')
+                : '- (no events scheduled today)'
+              void host
+                .openChat({
+                  workspaceId,
+                  prompt: `You are working from this workspace's calendar. Today's schedule:\n${lines}\n\nReview the schedule and start on the first actionable item.`,
+                  send: true,
+                })
+                .then((result) => {
+                  if (!result.ok) setLoadError(`Could not open the day-plan chat (${result.code}): ${result.message}`)
+                })
+            },
+          },
+        ]
+      : []),
     ...(backlogItems ?? [])
       .filter((item) => item.status !== 'completed' && item.status !== 'archived' && item.type !== 'epic' && !scheduledPaths.has(item.path))
       .slice(0, 8)
@@ -557,10 +580,23 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
     >
       <div className="mccal-bar">
         <span className="mccal-title">{title}</span>
-        {liveAgentCount > 0 ? (
-          <span className="mccal-live" title="Agents running in this workspace">
-            {liveAgentCount} agent{liveAgentCount === 1 ? '' : 's'} running
-          </span>
+        {liveRuns.length > 0 ? (
+          <button
+            type="button"
+            className="mccal-live"
+            title={`Scheduled runs working: ${liveRuns.map((run) => run.name).join(', ')} — open the first`}
+            onClick={() => {
+              const [first] = liveRuns
+              if (!first) return
+              try {
+                host.focusTab({ workspaceId: first.workspaceId, kind: 'chat', id: first.agentId })
+              } catch {
+                // Chats unavailable in this window — the readout stays informational.
+              }
+            }}
+          >
+            {liveRuns.length} run{liveRuns.length === 1 ? '' : 's'} working
+          </button>
         ) : null}
         <button type="button" className="mccal-btn" onClick={() => navigate(-1)} aria-label="Previous">
           ‹
@@ -660,6 +696,7 @@ export function CalendarPanel({ workspaceId, host, initialView }: CalendarPanelP
             draft={editor.draft}
             isNew={editor.isNew}
             canSchedule={workspaceRoot !== null}
+            runtimes={runtimes}
             error={editorError}
             onSave={handleSave}
             onDelete={handleDelete}

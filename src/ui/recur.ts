@@ -2,7 +2,7 @@
 // occurrence in every matching visible slot; the stored record stays a single
 // base event (occurrences reference it — editing/moving/resizing an
 // occurrence edits the series anchor). Scheduled runs are unaffected here:
-// automation/sprint repeats map to daily/weekly cadences on the automation
+// automation repeats map to daily/weekly cadences on the automation
 // record itself.
 
 import type { CalendarEvent } from '../types'

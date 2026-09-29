@@ -28,12 +28,10 @@ const STYLES = /* css */ `
   --mccal-note: var(--tone-neutral);
   --mccal-task: var(--tone-accent);
   --mccal-automation: var(--tone-warn);
-  --mccal-sprint: var(--accent-primary);
   --mccal-backlog: var(--tone-merged);
   --mccal-note-soft: color-mix(in srgb, var(--tone-neutral) 16%, transparent);
   --mccal-task-soft: color-mix(in srgb, var(--tone-accent) 15%, transparent);
   --mccal-automation-soft: color-mix(in srgb, var(--tone-warn) 15%, transparent);
-  --mccal-sprint-soft: color-mix(in srgb, var(--accent-primary) 14%, transparent);
   --mccal-backlog-soft: color-mix(in srgb, var(--tone-merged) 15%, transparent);
 }
 
@@ -45,6 +43,9 @@ const STYLES = /* css */ `
   border-radius: 999px;
   color: var(--tone-ok, var(--text-muted));
   border: 1px solid var(--border-subtle);
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
   white-space: nowrap;
 }
 
@@ -176,7 +177,6 @@ const STYLES = /* css */ `
 .mccal-ev.mccal-note { border-left-color: var(--mccal-note); background: var(--mccal-note-soft); }
 .mccal-ev.mccal-task { border-left-color: var(--mccal-task); background: var(--mccal-task-soft); }
 .mccal-ev.mccal-automation { border-left-color: var(--mccal-automation); background: var(--mccal-automation-soft); }
-.mccal-ev.mccal-sprint { border-left-color: var(--mccal-sprint); background: var(--mccal-sprint-soft); }
 .mccal-ev.mccal-from-backlog { border-left-color: var(--mccal-backlog); }
 .mccal-ev.mccal-dragging { opacity: 0.65; cursor: grabbing; z-index: 8; }
 .mccal-resize {
@@ -219,7 +219,6 @@ const STYLES = /* css */ `
 }
 .mccal-mchip.mccal-task { border-left-color: var(--mccal-task); background: var(--mccal-task-soft); }
 .mccal-mchip.mccal-automation { border-left-color: var(--mccal-automation); background: var(--mccal-automation-soft); }
-.mccal-mchip.mccal-sprint { border-left-color: var(--mccal-sprint); background: var(--mccal-sprint-soft); }
 .mccal-mmore { font-size: 9.5px; color: var(--text-subtle); }
 
 /* ── Planning rail ───────────────────────────────────────────────────────── */
@@ -312,7 +311,6 @@ const STYLES = /* css */ `
 .mccal-kbtn .mccal-kd { width: 14px; height: 4px; border-radius: 2px; background: var(--mccal-note); }
 .mccal-kbtn.mccal-k-task .mccal-kd { background: var(--mccal-task); }
 .mccal-kbtn.mccal-k-automation .mccal-kd { background: var(--mccal-automation); }
-.mccal-kbtn.mccal-k-sprint .mccal-kd { background: var(--mccal-sprint); }
 .mccal-field { margin-top: 12px; }
 .mccal-field label { display: block; font-size: 10.5px; color: var(--text-subtle); margin-bottom: 3px; }
 .mccal-field input, .mccal-field select, .mccal-field textarea {

@@ -1,6 +1,8 @@
 node_modules/
-dist/
+/dist/
 packed/
 *.key
 *.pem
+*.tgz.tmp
 .DS_Store
+# module/dist is committed: an install from GitHub fetches the built module.

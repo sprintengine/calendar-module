@@ -58,7 +58,7 @@ function timeLabel(minutes: number): string {
 
 function eventTimeLabel(event: CalendarEvent): string {
   const startMin = minutesOfDay(event.start)
-  if (event.kind === 'automation' || event.kind === 'sprint') {
+  if (event.kind === 'automation') {
     return `runs at ${timeLabel(startMin)}`
   }
   return `${timeLabel(startMin)} – ${timeLabel(Math.min(24 * 60, startMin + event.durationMinutes))}`

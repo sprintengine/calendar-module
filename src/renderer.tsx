@@ -65,7 +65,7 @@ export const registerRenderer: RegisterRenderer = (host: RendererHost) => {
   host.registerWorkspaceType({
     id: 'calendar',
     label: 'Calendar',
-    description: 'A time-gridded planner: notes and tasks on your week, and Backlog items, automations, and sprints scheduled to run at a time.',
+    description: 'A time-gridded planner: notes and tasks on your week, and Backlog items and automations scheduled to run at a time as chats.',
     icon: CalendarIcon,
     accentToken: '--tone-accent',
     searchTerms: ['calendar', 'schedule', 'planner', 'outlook', 'week', 'agenda', 'time block'],
@@ -143,7 +143,6 @@ export const registerRenderer: RegisterRenderer = (host: RendererHost) => {
 async function scheduleFromBacklog(host: RendererHost, context: BacklogItemActionContext): Promise<void> {
   const claimed = requestScheduleOnCalendar({
     workspaceId: context.workspaceId,
-    workspaceRoot: context.workspaceRoot,
     path: context.item.path,
     title: context.item.title,
   })
@@ -169,7 +168,7 @@ async function scheduleFromBacklog(host: RendererHost, context: BacklogItemActio
     updatedAt: stamp,
   }
   const scheduled = (await host.invoke(CH_SCHEDULE, {
-    workspaceRoot: context.workspaceRoot,
+    workspaceId: context.workspaceId,
     event,
   })) as ScheduleResponse
   if (!scheduled.ok) throw new Error(`${scheduled.code}: ${scheduled.message}`)
